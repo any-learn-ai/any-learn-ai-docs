@@ -74,7 +74,7 @@ AIが目標設定・期間・レベルをチャットで合意
 
 ### AI
 - **Anthropic Claude API**（直接利用・AWS Bedrock不使用）
-  - Claude Opus 4.8：学習プログラム生成・診断分析・アセスメント問題生成
+  - Claude Sonnet 4.8：学習プログラム生成・診断分析・アセスメント問題生成
   - Claude Haiku 4.5：リアルタイム会話・回答評価・Q&A・脱線検知
 
 ---
