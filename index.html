@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Any Learn AI — KNOWLEDGE QUEST | AI個別指導システム</title>
+  <meta name="description" content="AIが専属の先生となり、あなただけの学習プログラムを作成。ゲームのように楽しく、個別指導塾のように深く学べるAI学習プラットフォーム。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Rajdhani:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* ===== リセット & 基本 ===================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    /* ===== デザイントークン ===================================== */
+    :root {
+      --bg-primary:   #0d0621;
+      --bg-secondary: #130930;
+      --purple-300:   #c4b5fd;
+      --purple-400:   #a78bfa;
+      --purple-500:   #8b5cf6;
+      --purple-600:   #7c3aed;
+      --gold-300:     #fcd34d;
+      --gold-400:     #fbbf24;
+      --gold-500:     #f59e0b;
+      --success:      #10b981;
+      --info:         #38bdf8;
+      --text-primary:   #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted:     #64748b;
+      --glass-bg:     rgba(30, 10, 74, 0.65);
+      --glass-border: rgba(167, 139, 250, 0.2);
+      --glow-gold:    0 0 20px rgba(251,191,36,.5), 0 0 60px rgba(251,191,36,.2);
+      --glow-purple:  0 0 20px rgba(139,92,246,.5), 0 0 40px rgba(139,92,246,.2);
+      --ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-snappy:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      --ease-dramatic:cubic-bezier(0.19, 1, 0.22, 1);
+      --font-display: 'Cinzel Decorative', serif;
+      --font-body:    'M PLUS Rounded 1c', sans-serif;
+      --font-number:  'Rajdhani', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ===== 背景 ================================================ */
+    .bg-layer {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(124,58,237,.18) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(59,130,246,.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 60% 85%, rgba(251,191,36,.06) 0%, transparent 50%),
+        linear-gradient(135deg, #0d0621 0%, #130930 35%, #0f172a 70%, #0d0621 100%);
+    }
+    canvas#stars { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .7; }
+    .content-wrap { position: relative; z-index: 2; }
+
+    /* ===== ナビゲーション ===================================== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(13,6,33,.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--purple-500), var(--gold-400));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: var(--glow-purple);
+    }
+    .nav-logo-text {
+      font-family: var(--font-display);
+      font-size: 14px;
+      color: var(--gold-300);
+      text-shadow: 0 0 12px rgba(252,211,77,.6);
+      letter-spacing: 1px;
+    }
+    .nav-links {
+      display: flex; gap: 32px; list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-secondary); text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--gold-300); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--purple-600), var(--purple-500));
+      color: #fff; border: none; border-radius: 10px;
+      padding: 10px 24px; font-size: 14px; font-weight: 700;
+      font-family: var(--font-body);
+      cursor: pointer; text-decoration: none;
+      box-shadow: 0 4px 16px rgba(124,58,237,.4);
+      transition: all .2s var(--ease-snappy);
+      position: relative; overflow: hidden;
+    }
+    .nav-cta::after {
+      content: ''; position: absolute;
+      top: -50%; left: -60%; width: 40%; height: 200%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+      transform: skewX(-15deg);
+      animation: shine 3s infinite;
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,.6); }
+    @keyframes shine { 0%{left:-60%} 30%{left:120%} 100%{left:120%} }
+
+    /* ===== ヒーローセクション ================================= */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(251,191,36,.1);
+      border: 1px solid rgba(251,191,36,.3);
+      border-radius: 99px; padding: 6px 16px;
+      font-size: 13px; color: var(--gold-300);
+      margin-bottom: 32px;
+      animation: fadeSlideDown .8s var(--ease-dramatic) both;
+    }
+    .hero-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--gold-400);
+      box-shadow: 0 0 8px var(--gold-400);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100%{ box-shadow: 0 0 8px var(--gold-400); }
+      50%{ box-shadow: 0 0 16px var(--gold-400), 0 0 32px rgba(251,191,36,.4); }
+    }
+    .hero-title-sub {
+      font-size: clamp(13px, 2vw, 16px);
+      letter-spacing: 6px;
+      color: var(--purple-300);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      animation: fadeSlideDown .8s .1s var(--ease-dramatic) both;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(38px, 8vw, 88px);
+      line-height: 1.05;
+      margin-bottom: 24px;
+      animation: fadeSlideDown .9s .2s var(--ease-dramatic) both;
+    }
+    .hero-title-line1 { display: block; color: var(--text-primary); }
+    .hero-title-line2 {
+      display: block;
+      background: linear-gradient(90deg, var(--gold-300) 0%, var(--gold-400) 50%, var(--purple-300) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 20px rgba(252,211,77,.4));
+    }
+    .hero-desc {
+      font-size: clamp(15px, 2.5vw, 19px);
+      color: var(--text-secondary);
+      max-width: 600px; margin: 0 auto 48px;
+      line-height: 1.8;
+      animation: fadeSlideDown .9s .35s var(--ease-dramatic) both;
+    }
+    .hero-actions {
+      display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 64px;
+      animation: fadeSlideDown .9s .5s var(--ease-dramatic) both;
+    }
+    .btn-gold {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--gold-500), var(--gold-300), var(--gold-500));
+      background-size: 200%;
+      color: #1a0a00; border: none; border-radius: 14px;
+      padding: 16px 36px; font-size: 16px; font-weight: 800;
+      font-family: var(--font-body);
+      cursor: pointer; text-decoration: none;
+      box-shadow: var(--glow-gold);
+      transition: all .25s var(--ease-snappy);
+      position: relative; overflow: hidden;
+    }
+    .btn-gold:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(251,191,36,.6), 0 0 60px rgba(251,191,36,.25);
+      background-position: 100%;
+    }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--glass-bg);
+      color: var(--text-primary); text-decoration: none;
+      border: 1px solid var(--glass-border); border-radius: 14px;
+      padding: 16px 36px; font-size: 16px; font-weight: 600;
+      font-family: var(--font-body);
+      backdrop-filter: blur(12px);
+      cursor: pointer;
+      transition: all .25s var(--ease-snappy);
+    }
+    .btn-ghost:hover {
+      border-color: var(--purple-400);
+      background: rgba(139,92,246,.15);
+      transform: translateY(-3px);
+      box-shadow: var(--glow-purple);
+    }
+
+    /* ===== ヒーロー UI モックアップ ========================== */
+    .hero-mockup {
+      width: 100%; max-width: 900px; margin: 0 auto;
+      animation: fadeSlideUp .9s .7s var(--ease-dramatic) both;
+    }
+    .mockup-window {
+      background: rgba(19,9,48,.85);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(167,139,250,.1),
+        0 40px 80px rgba(0,0,0,.6),
+        0 0 60px rgba(124,58,237,.15);
+    }
+    .mockup-titlebar {
+      background: rgba(255,255,255,.05);
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .mockup-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .mockup-dot:nth-child(1){ background: #ff5f57; }
+    .mockup-dot:nth-child(2){ background: #ffbd2e; }
+    .mockup-dot:nth-child(3){ background: #28c840; }
+    .mockup-hud {
+      display: flex; align-items: center; gap: 16px;
+      margin-left: auto; font-family: var(--font-number);
+      font-size: 13px;
+    }
+    .mockup-hud-item { display: flex; align-items: center; gap: 6px; }
+    .mockup-hud-streak { color: #f97316; }
+    .mockup-hud-level  { color: var(--purple-300); }
+    .mockup-hud-combo  { color: var(--gold-300); font-weight: 700; }
+    .xp-bar-mini {
+      flex: 1; height: 4px; border-radius: 99px;
+      background: rgba(255,255,255,.1);
+      max-width: 120px; margin-left: auto;
+      overflow: visible; position: relative;
+    }
+    .xp-bar-mini-fill {
+      height: 100%; width: 72%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--purple-600), var(--purple-300));
+      box-shadow: 0 0 6px rgba(167,139,250,.8);
+    }
+
+    .mockup-body { display: flex; min-height: 320px; }
+    .mockup-left {
+      width: 220px; flex-shrink: 0;
+      padding: 24px 20px;
+      border-right: 1px solid var(--glass-border);
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .avatar-circle {
+      width: 100px; height: 100px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple-600) 0%, var(--purple-400) 50%, var(--gold-500) 100%);
+      border: 3px solid rgba(252,211,77,.4);
+      box-shadow: 0 0 24px rgba(124,58,237,.4), 0 0 48px rgba(124,58,237,.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 44px;
+      animation: avatar-float 3s ease-in-out infinite;
+      position: relative;
+    }
+    .avatar-circle::after {
+      content: '';
+      position: absolute; inset: -6px; border-radius: 50%;
+      border: 2px solid transparent;
+      background: conic-gradient(from 0deg, rgba(252,211,77,.8) 0%, transparent 40%, rgba(252,211,77,.4) 60%, transparent 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+      mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+      animation: spin 4s linear infinite;
+    }
+    @keyframes avatar-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .speech-bubble {
+      background: rgba(30,10,74,.9);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px; padding: 12px 14px;
+      font-size: 12px; color: var(--text-secondary);
+      position: relative; line-height: 1.6; width: 100%;
+    }
+    .speech-bubble::before {
+      content: '';
+      position: absolute; top: -8px; left: 20px;
+      border: 8px solid transparent;
+      border-bottom-color: var(--glass-border);
+    }
+    .typing-cursor {
+      display: inline-block;
+      width: 2px; height: 12px;
+      background: var(--purple-300);
+      animation: blink .8s ease-in-out infinite;
+      vertical-align: text-bottom;
+      margin-left: 2px;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .mockup-right {
+      flex: 1; padding: 20px 24px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .mockup-section-label {
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--gold-400); font-weight: 700;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .mockup-section-label::before {
+      content: '✦';
+    }
+    .explanation-block {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px; padding: 14px 16px;
+      font-size: 13px; line-height: 1.7;
+      color: var(--text-secondary);
+    }
+    .explanation-block .keyword {
+      color: var(--purple-300);
+      text-shadow: 0 0 8px rgba(196,181,253,.6);
+      font-weight: 700;
+    }
+    .explanation-block .formula {
+      display: inline-block;
+      background: rgba(124,58,237,.2);
+      border: 1px solid rgba(139,92,246,.3);
+      border-radius: 6px; padding: 2px 8px;
+      color: var(--gold-300);
+      font-family: var(--font-number); font-size: 14px;
+      box-shadow: 0 0 8px rgba(252,211,77,.15);
+    }
+
+    .suggestion-list { display: flex; flex-direction: column; gap: 6px; }
+    .suggestion-card {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(56,189,248,.06);
+      border: 1px solid rgba(56,189,248,.2);
+      border-radius: 8px; padding: 9px 12px;
+      font-size: 12px; color: #7dd3fc;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .suggestion-card:hover {
+      background: rgba(56,189,248,.12);
+      transform: translateX(3px);
+    }
+    .suggestion-icon { font-size: 14px; flex-shrink: 0; }
+    .suggestion-arrow { margin-left: auto; opacity: .6; }
+
+    .mockup-actions {
+      display: flex; gap: 8px; margin-top: auto;
+    }
+    .mockup-btn {
+      flex: 1; border: none; border-radius: 8px;
+      padding: 10px; font-size: 12px; font-weight: 700;
+      font-family: var(--font-body); cursor: pointer;
+      transition: all .15s;
+    }
+    .mockup-btn-secondary {
+      background: rgba(255,255,255,.06);
+      color: var(--text-secondary);
+      border: 1px solid var(--glass-border);
+    }
+    .mockup-btn-primary {
+      background: linear-gradient(135deg, var(--gold-500), var(--gold-300));
+      color: #1a0a00;
+      box-shadow: 0 4px 12px rgba(251,191,36,.3);
+    }
+    .mockup-btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(251,191,36,.5);
+      transform: translateY(-1px);
+    }
+
+    /* ===== フローティングバッジ ============================== */
+    .hero-floats { position: relative; }
+    .float-badge {
+      position: absolute;
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px; padding: 8px 14px;
+      font-size: 12px; font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,.3);
+      animation: float-badge 3s ease-in-out infinite;
+    }
+    .float-badge-1 {
+      top: 20px; left: -80px;
+      color: var(--gold-300);
+      animation-delay: 0s;
+    }
+    .float-badge-2 {
+      top: 80px; right: -90px;
+      color: var(--success);
+      animation-delay: 1s;
+    }
+    .float-badge-3 {
+      bottom: 40px; left: -70px;
+      color: var(--purple-300);
+      animation-delay: 1.5s;
+    }
+    @keyframes float-badge {
+      0%,100%{ transform: translateY(0); }
+      50%{ transform: translateY(-6px); }
+    }
+
+    /* ===== スタッツバー ======================================= */
+    .stats-bar {
+      padding: 28px 40px;
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+      background: rgba(255,255,255,.03);
+      display: flex; justify-content: center; gap: 0;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      padding: 8px 48px;
+      border-right: 1px solid var(--glass-border);
+      text-align: center;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--font-number);
+      font-size: 36px; font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--gold-300), var(--purple-300));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ===== セクション共通 ==================================== */
+    section { padding: 100px 24px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-eyebrow {
+      text-align: center;
+      font-size: 12px; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--gold-400); margin-bottom: 12px; font-weight: 700;
+    }
+    .section-title {
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: clamp(24px, 4vw, 40px);
+      margin-bottom: 16px; line-height: 1.2;
+    }
+    .section-desc {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 16px; max-width: 560px;
+      margin: 0 auto 64px; line-height: 1.8;
+    }
+
+    /* ===== HOWIT WORKS ======================================= */
+    .how-it-works { background: rgba(255,255,255,.02); }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0;
+    }
+    .step-item {
+      padding: 32px 24px;
+      text-align: center;
+      position: relative;
+    }
+    .step-item:not(:last-child)::after {
+      content: '→';
+      position: absolute; right: -4px; top: 50%; transform: translateY(-50%);
+      color: var(--glass-border); font-size: 20px;
+    }
+    .step-num {
+      font-family: var(--font-number);
+      font-size: 11px; letter-spacing: 2px;
+      color: var(--gold-400); margin-bottom: 12px; font-weight: 700;
+    }
+    .step-icon {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin: 0 auto 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.3);
+      transition: all .3s var(--ease-bounce);
+    }
+    .step-item:hover .step-icon {
+      transform: translateY(-6px) scale(1.08);
+      box-shadow: var(--glow-purple);
+      border-color: var(--purple-400);
+    }
+    .step-title {
+      font-size: 14px; font-weight: 700; margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+    .step-body { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ===== マイクロサイクル ================================== */
+    .cycle-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px; margin-bottom: 48px;
+    }
+    @media(max-width:768px){ .cycle-cards { grid-template-columns: 1fr; } }
+    .cycle-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px; padding: 28px 24px;
+      backdrop-filter: blur(12px);
+      transition: all .3s var(--ease-snappy);
+      position: relative; overflow: hidden;
+    }
+    .cycle-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .cycle-card.card-explain::before { background: linear-gradient(90deg, var(--purple-500), var(--purple-300)); }
+    .cycle-card.card-qa::before      { background: linear-gradient(90deg, var(--info), #a5f3fc); }
+    .cycle-card.card-quiz::before    { background: linear-gradient(90deg, var(--gold-500), var(--gold-300)); }
+
+    .cycle-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(0,0,0,.4), 0 0 30px rgba(124,58,237,.15);
+      border-color: rgba(167,139,250,.4);
+    }
+    .cycle-icon { font-size: 36px; margin-bottom: 16px; }
+    .cycle-num {
+      font-family: var(--font-number); font-size: 11px; letter-spacing: 2px;
+      font-weight: 700; margin-bottom: 8px;
+    }
+    .card-explain .cycle-num { color: var(--purple-300); }
+    .card-qa      .cycle-num { color: var(--info); }
+    .card-quiz    .cycle-num { color: var(--gold-300); }
+    .cycle-title { font-size: 18px; font-weight: 800; margin-bottom: 10px; }
+    .cycle-body  { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+
+    .cycle-flow {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .cycle-flow-item {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--glass-border);
+      border-radius: 99px; padding: 8px 18px;
+      font-size: 13px; font-weight: 600;
+    }
+    .cycle-flow-arrow { color: var(--glass-border); font-size: 18px; }
+
+    /* ===== フィーチャーグリッド ============================== */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px; padding: 32px 28px;
+      backdrop-filter: blur(12px);
+      transition: all .3s var(--ease-snappy);
+    }
+    .feature-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(167,139,250,.4);
+      box-shadow: 0 20px 40px rgba(0,0,0,.4), var(--glow-purple);
+    }
+    .feature-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; margin-bottom: 20px;
+    }
+    .fi-purple { background: rgba(124,58,237,.25); border: 1px solid rgba(139,92,246,.3); }
+    .fi-gold   { background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.3); }
+    .fi-green  { background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3); }
+    .fi-blue   { background: rgba(56,189,248,.15); border: 1px solid rgba(56,189,248,.3); }
+    .fi-pink   { background: rgba(240,171,252,.1); border: 1px solid rgba(240,171,252,.3); }
+    .fi-orange { background: rgba(249,115,22,.15); border: 1px solid rgba(249,115,22,.3); }
+    .feature-title { font-size: 17px; font-weight: 800; margin-bottom: 10px; }
+    .feature-body  { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+
+    /* ===== ゲーミフィケーション ============================== */
+    .game-section { background: rgba(255,255,255,.02); }
+    .game-showcase {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px; align-items: start;
+    }
+    @media(max-width:768px){ .game-showcase { grid-template-columns: 1fr; } }
+    .game-panel {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px; padding: 24px;
+      backdrop-filter: blur(12px);
+    }
+    .game-panel-title {
+      font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--gold-400); font-weight: 700; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .game-panel-title::before { content: '✦'; }
+
+    /* XPバー */
+    .xp-section { display: flex; flex-direction: column; gap: 6px; }
+    .xp-meta { display: flex; justify-content: space-between; align-items: center; }
+    .xp-level {
+      font-family: var(--font-number); font-size: 13px; font-weight: 700;
+      color: var(--purple-300);
+    }
+    .xp-count { font-size: 12px; color: var(--text-muted); }
+    .xp-bar-track {
+      height: 10px; border-radius: 99px;
+      background: rgba(255,255,255,.08);
+      overflow: visible; position: relative;
+    }
+    .xp-bar-fill {
+      height: 100%; width: 74%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--purple-600), var(--purple-400), var(--purple-300));
+      box-shadow: 0 0 8px rgba(167,139,250,.7), 0 0 20px rgba(167,139,250,.3);
+      position: relative; transition: width 1.5s var(--ease-dramatic);
+    }
+    .xp-bar-tip {
+      position: absolute; right: -2px; top: -4px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(196,181,253,1), 0 0 20px rgba(196,181,253,.6);
+      animation: tip-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes tip-pulse {
+      0%,100%{ box-shadow: 0 0 10px rgba(196,181,253,1), 0 0 20px rgba(196,181,253,.5); }
+      50%{ box-shadow: 0 0 16px rgba(196,181,253,1), 0 0 32px rgba(196,181,253,.8); }
+    }
+    .xp-next { font-size: 11px; color: var(--text-muted); text-align: right; }
+
+    /* コンボ */
+    .combo-display {
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px; padding: 20px;
+      background: rgba(252,211,77,.05);
+      border: 1px solid rgba(252,211,77,.15); border-radius: 14px;
+      margin-top: 16px;
+    }
+    .combo-num {
+      font-family: var(--font-number);
+      font-size: 64px; font-weight: 900;
+      color: var(--gold-300);
+      text-shadow: 0 0 20px rgba(252,211,77,.8), 0 0 40px rgba(252,211,77,.4);
+      line-height: 1;
+    }
+    .combo-label { font-size: 12px; color: rgba(252,211,77,.6); letter-spacing: 2px; font-weight: 700; }
+
+    /* ストリーク */
+    .streak-display {
+      display: flex; align-items: center; gap: 12px; padding: 16px 0;
+    }
+    .streak-icon { font-size: 40px; }
+    .streak-num  {
+      font-family: var(--font-number);
+      font-size: 48px; font-weight: 900;
+      color: #f97316;
+      text-shadow: 0 0 16px rgba(249,115,22,.6);
+    }
+    .streak-text { font-size: 12px; color: var(--text-muted); }
+
+    /* スター評価 */
+    .star-row { display: flex; gap: 8px; align-items: center; padding: 10px 0; }
+    .star-title { font-size: 13px; color: var(--text-secondary); flex: 1; }
+    .stars { display: flex; gap: 4px; }
+    .star { font-size: 18px; }
+    .star.filled { color: var(--gold-300); filter: drop-shadow(0 0 4px rgba(252,211,77,.6)); }
+    .star.empty  { color: #374151; }
+
+    /* アチーブメント */
+    .achievement-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .achievement-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px; font-size: 12px;
+    }
+    .achievement-icon { font-size: 20px; flex-shrink: 0; }
+    .achievement-name { color: var(--text-secondary); }
+    .achievement-badge {
+      margin-left: auto;
+      font-size: 10px; padding: 2px 6px; border-radius: 99px;
+      background: rgba(16,185,129,.2); color: var(--success); font-weight: 700;
+    }
+
+    /* ===== 対応テーマ ======================================== */
+    .themes-section {}
+    .themes-scroller {
+      overflow-x: auto; padding-bottom: 16px;
+      scrollbar-width: thin; scrollbar-color: var(--glass-border) transparent;
+    }
+    .themes-list {
+      display: flex; gap: 12px; width: max-content;
+      padding: 0 24px;
+    }
+    .theme-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 99px; padding: 10px 20px;
+      font-size: 13px; font-weight: 600;
+      white-space: nowrap; cursor: pointer;
+      transition: all .2s var(--ease-snappy);
+      backdrop-filter: blur(8px);
+    }
+    .theme-pill:hover {
+      border-color: var(--gold-400);
+      color: var(--gold-300);
+      box-shadow: 0 4px 16px rgba(251,191,36,.2);
+      transform: translateY(-3px);
+    }
+    .theme-emoji { font-size: 16px; }
+
+    /* ===== テスティモニアル（プレースホルダー）============== */
+    .testimonials { background: rgba(255,255,255,.02); }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .testimonial-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px; padding: 28px 24px;
+      backdrop-filter: blur(12px);
+    }
+    .testimonial-stars { color: var(--gold-400); margin-bottom: 16px; letter-spacing: 2px; }
+    .testimonial-body {
+      font-size: 14px; color: var(--text-secondary); line-height: 1.8;
+      margin-bottom: 20px;
+    }
+    .testimonial-user { display: flex; align-items: center; gap: 12px; }
+    .testimonial-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple-500), var(--gold-400));
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      border: 2px solid rgba(167,139,250,.3);
+    }
+    .testimonial-name { font-size: 13px; font-weight: 700; }
+    .testimonial-meta { font-size: 12px; color: var(--text-muted); }
+
+    /* ===== CTA セクション ==================================== */
+    .cta-section {
+      text-align: center;
+      background: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,.25) 0%, transparent 70%);
+      border-top: 1px solid var(--glass-border);
+    }
+    .cta-title {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 5vw, 52px);
+      margin-bottom: 20px; line-height: 1.15;
+    }
+    .cta-title span {
+      background: linear-gradient(90deg, var(--gold-300), var(--gold-400), var(--purple-300));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .cta-desc {
+      font-size: 16px; color: var(--text-secondary);
+      max-width: 460px; margin: 0 auto 40px; line-height: 1.8;
+    }
+    .cta-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .cta-note { font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+
+    /* ===== フッター ========================================== */
+    footer {
+      padding: 48px 40px 32px;
+      border-top: 1px solid var(--glass-border);
+      display: flex; flex-direction: column; align-items: center; gap: 24px;
+    }
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 18px; color: var(--gold-300);
+      text-shadow: 0 0 12px rgba(252,211,77,.4);
+    }
+    .footer-links {
+      display: flex; gap: 32px; flex-wrap: wrap; justify-content: center;
+    }
+    .footer-links a {
+      color: var(--text-muted); text-decoration: none; font-size: 13px;
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--text-secondary); }
+    .footer-copy { font-size: 12px; color: var(--text-muted); }
+
+    /* ===== ユーティリティ ==================================== */
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up {
+      opacity: 0; transform: translateY(32px);
+      transition: opacity .7s var(--ease-dramatic), transform .7s var(--ease-dramatic);
+    }
+    .fade-in-up.visible { opacity: 1; transform: none; }
+
+    /* スクロールバー */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 99px; }
+
+    /* レスポンシブ */
+    @media(max-width:768px){
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      .stats-bar { gap: 0; }
+      .stat-item { padding: 12px 24px; }
+      .steps-grid { grid-template-columns: repeat(2, 1fr); }
+      .step-item::after { display: none; }
+      .float-badge { display: none; }
+      .mockup-left { width: 140px; }
+    }
+    @media(max-width:480px){
+      .steps-grid { grid-template-columns: 1fr; }
+      .mockup-left { display: none; }
+      section { padding: 64px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<canvas id="stars"></canvas>
+
+<div class="content-wrap">
+
+  <!-- ナビゲーション -->
+  <nav>
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">⚡</div>
+      <span class="nav-logo-text">ANY LEARN AI</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#how">学習の流れ</a></li>
+      <li><a href="#features">機能</a></li>
+      <li><a href="#game">ゲーム要素</a></li>
+      <li><a href="#themes">対応テーマ</a></li>
+    </ul>
+    <a href="#cta" class="nav-cta">無料で始める ✦</a>
+  </nav>
+
+  <!-- ヒーロー -->
+  <section class="hero" id="hero">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      AI個別指導 × ゲーミフィケーション — 新体験の学習プラットフォーム
+    </div>
+    <p class="hero-title-sub">Knowledge Quest</p>
+    <h1 class="hero-title">
+      <span class="hero-title-line1">学ぶことが、</span>
+      <span class="hero-title-line2">冒険になる。</span>
+    </h1>
+    <p class="hero-desc">
+      AIが専属の先生となり、あなただけの学習プログラムを作成。<br>
+      ゲームのように楽しく、個別指導塾のように深く学べる。<br>
+      どんなテーマでも、今日から始められます。
+    </p>
+    <div class="hero-actions">
+      <a href="#cta" class="btn-gold">⚔️ 冒険を始める（無料）</a>
+      <a href="#how" class="btn-ghost">▶ 学習の流れを見る</a>
+    </div>
+
+    <div class="hero-floats" style="width:100%;max-width:900px;position:relative">
+      <div class="float-badge float-badge-1">🔥 7日連続学習中！</div>
+      <div class="float-badge float-badge-2">✨ CORRECT! +30XP</div>
+      <div class="float-badge float-badge-3">⚡ Lv.4 → Lv.5 !</div>
+      <div class="hero-mockup">
+        <div class="mockup-window">
+          <div class="mockup-titlebar">
+            <span class="mockup-dot"></span>
+            <span class="mockup-dot"></span>
+            <span class="mockup-dot"></span>
+            <div class="mockup-hud">
+              <span class="mockup-hud-item mockup-hud-streak">🔥 7</span>
+              <span class="mockup-hud-item mockup-hud-level">⚡ Lv.4</span>
+              <span class="mockup-hud-item mockup-hud-combo">💫 x3 COMBO</span>
+              <div class="xp-bar-mini"><div class="xp-bar-mini-fill"></div></div>
+            </div>
+          </div>
+          <div class="mockup-body">
+            <div class="mockup-left">
+              <div class="avatar-circle">🧙</div>
+              <div class="speech-bubble">
+                条件付き確率とは、Bが起きたとき Aも起きる確率のことです！<span class="typing-cursor"></span>
+              </div>
+            </div>
+            <div class="mockup-right">
+              <div class="mockup-section-label">STEP 1 / 5 — 解説フェーズ</div>
+              <div class="explanation-block">
+                <span class="keyword">条件付き確率 P(A|B)</span> とは、「Bが起きたとわかったとき、さらに Aも起きる確率」のことです。<br><br>
+                公式: <span class="formula">P(A|B) = P(A∩B) / P(B)</span>
+              </div>
+              <div class="mockup-section-label" style="margin-top:4px">よく聞かれる質問</div>
+              <div class="suggestion-list">
+                <div class="suggestion-card">
+                  <span class="suggestion-icon">❓</span>
+                  P(A∩B) って何ですか？
+                  <span class="suggestion-arrow">→</span>
+                </div>
+                <div class="suggestion-card">
+                  <span class="suggestion-icon">❓</span>
+                  なぜ分母が P(B) になるの？
+                  <span class="suggestion-arrow">→</span>
+                </div>
+                <div class="suggestion-card">
+                  <span class="suggestion-icon">❓</span>
+                  別の例で説明してもらえる？
+                  <span class="suggestion-arrow">→</span>
+                </div>
+              </div>
+              <div class="mockup-actions">
+                <button class="mockup-btn mockup-btn-secondary">✏️ 他の質問を入力</button>
+                <button class="mockup-btn mockup-btn-primary">✅ わかりました！→</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- スタッツバー -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">対応学習テーマ</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">20問</div>
+      <div class="stat-label">診断アセスメント</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">AI</div>
+      <div class="stat-label">完全個別最適化</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">0円</div>
+      <div class="stat-label">まず無料で体験</div>
+    </div>
+  </div>
+
+  <!-- 学習の流れ -->
+  <section id="how" class="how-it-works">
+    <div class="section-inner">
+      <p class="section-eyebrow">✦ How It Works</p>
+      <h2 class="section-title">始めてから学習完了まで</h2>
+      <p class="section-desc">テーマを入力するだけで、AIがすべての準備を整えます。</p>
+      <div class="steps-grid fade-in-up">
+        <div class="step-item">
+          <p class="step-num">STEP 01</p>
+          <div class="step-icon">💬</div>
+          <p class="step-title">テーマを入力</p>
+          <p class="step-body">「確率をマスターしたい」など自由に入力。音声でもOK。</p>
+        </div>
+        <div class="step-item">
+          <p class="step-num">STEP 02</p>
+          <div class="step-icon">🎯</div>
+          <p class="step-title">目標を設定</p>
+          <p class="step-body">AIが到達レベル・期間・スケジュールを提案し合意。</p>
+        </div>
+        <div class="step-item">
+          <p class="step-num">STEP 03</p>
+          <div class="step-icon">📊</div>
+          <p class="step-title">理解度を診断</p>
+          <p class="step-body">約20問のAI問題で現在の実力を正確に把握。</p>
+        </div>
+        <div class="step-item">
+          <p class="step-num">STEP 04</p>
+          <div class="step-icon">🗺️</div>
+          <p class="step-title">プログラム生成</p>
+          <p class="step-body">あなただけの最適な学習マップを自動で作成。</p>
+        </div>
+        <div class="step-item">
+          <p class="step-num">STEP 05</p>
+          <div class="step-icon">⚔️</div>
+          <p class="step-title">冒険スタート</p>
+          <p class="step-body">AIメンターと一緒にステップを一つずつクリア。</p>
+        </div>
+        <div class="step-item">
+          <p class="step-num">STEP 06</p>
+          <div class="step-icon">👑</div>
+          <p class="step-title">マスターへ</p>
+          <p class="step-body">XP・レベル・称号で成長を実感しながらゴールへ。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- マイクロサイクル -->
+  <section id="cycle">
+    <div class="section-inner">
+      <p class="section-eyebrow">✦ Micro Cycle</p>
+      <h2 class="section-title">3ステップで確実に身につく</h2>
+      <p class="section-desc">良い家庭教師の指導スタイルを忠実に再現。小さな単位の繰り返しで深い理解を構築します。</p>
+      <div class="cycle-cards fade-in-up">
+        <div class="cycle-card card-explain">
+          <div class="cycle-icon">📖</div>
+          <p class="cycle-num">① EXPLANATION</p>
+          <h3 class="cycle-title">1概念を丁寧に解説</h3>
+          <p class="cycle-body">AIメンターが1つの概念だけをテキスト・図・アニメーションで解説。読み上げも同時再生。情報の詰め込みは絶対にしません。</p>
+        </div>
+        <div class="cycle-card card-qa">
+          <div class="cycle-icon">💬</div>
+          <p class="cycle-num">② Q&amp;A</p>
+          <h3 class="cycle-title">疑問をその場で解消</h3>
+          <p class="cycle-body">よくある質問3問をサジェスト表示。タップ一つで即回答。自由に質問もできます。脱線しそうになると先生が優しくガイド。</p>
+        </div>
+        <div class="cycle-card card-quiz">
+          <div class="cycle-icon">⚔️</div>
+          <p class="cycle-num">③ CHALLENGE</p>
+          <h3 class="cycle-title">確認問題で定着確認</h3>
+          <p class="cycle-body">理解を確かめる問題を1問出題。正解で次のステップへ。不正解なら別の角度から再解説。何度でも挑戦できます。</p>
+        </div>
+      </div>
+      <div class="cycle-flow fade-in-up">
+        <span class="cycle-flow-item">📖 解説</span>
+        <span class="cycle-flow-arrow">→</span>
+        <span class="cycle-flow-item">💬 Q&amp;A</span>
+        <span class="cycle-flow-arrow">→</span>
+        <span class="cycle-flow-item">⚔️ 確認問題</span>
+        <span class="cycle-flow-arrow">→</span>
+        <span class="cycle-flow-item" style="color:var(--success)">✅ 正解！次へ</span>
+        <span class="cycle-flow-arrow" style="color:var(--text-muted)">or</span>
+        <span class="cycle-flow-item" style="color:var(--purple-300)">💡 再解説</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 機能 -->
+  <section id="features">
+    <div class="section-inner">
+      <p class="section-eyebrow">✦ Features</p>
+      <h2 class="section-title">すべての機能が、学習のために</h2>
+      <p class="section-desc">テクノロジーと教育設計の融合で、今まで体験したことのない学習体験を提供します。</p>
+      <div class="features-grid fade-in-up">
+        <div class="feature-card">
+          <div class="feature-icon fi-purple">🧠</div>
+          <h3 class="feature-title">完全個別最適化</h3>
+          <p class="feature-body">アセスメント結果から弱点・強みを分析し、あなただけの学習プログラムをAIが自動生成します。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-gold">🧙</div>
+          <h3 class="feature-title">AIメンターアバター</h3>
+          <p class="feature-body">先生キャラクターが音声と表情で指導。解説・励まし・お祝いをリアルタイムに表現します。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-blue">🎤</div>
+          <h3 class="feature-title">音声入出力対応</h3>
+          <p class="feature-body">話しかけて質問・回答できます。Amazon Pollyの自然な音声と、Amazon Transcribeの音声認識を搭載。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-green">📈</div>
+          <h3 class="feature-title">リアルタイム進捗管理</h3>
+          <p class="feature-body">クエストマップ・習熟度グラフ・XPバーでいつでも成長を確認。学習ストリークで継続習慣を形成。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-pink">✨</div>
+          <h3 class="feature-title">自由質問（いつでも）</h3>
+          <p class="feature-body">学習中のどのタイミングでも質問OK。テーマから外れた場合は「あとで聞くリスト」に保存して学習を継続。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-orange">🎬</div>
+          <h3 class="feature-title">リッチコンテンツ解説</h3>
+          <p class="feature-body">テキストだけでなく、図・アニメーション・数式（LaTeX）を組み合わせて概念を視覚的に説明します。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ゲーミフィケーション -->
+  <section id="game" class="game-section">
+    <div class="section-inner">
+      <p class="section-eyebrow">✦ Gamification</p>
+      <h2 class="section-title">学習が、ゲームになる。</h2>
+      <p class="section-desc">XP・コンボ・ストリーク・アチーブメント。成長をゲーム的に可視化して、続けたくなる学習体験を実現。</p>
+      <div class="game-showcase fade-in-up">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="game-panel">
+            <p class="game-panel-title">経験値 &amp; レベル</p>
+            <div class="xp-section">
+              <div class="xp-meta">
+                <span class="xp-level">⚡ Level 4 — "確率の使い手"</span>
+                <span class="xp-count">847 / 900 XP</span>
+              </div>
+              <div class="xp-bar-track">
+                <div class="xp-bar-fill"><div class="xp-bar-tip"></div></div>
+              </div>
+              <p class="xp-next">あと 53 XP で Level 5 へ！</p>
+            </div>
+            <div class="combo-display">
+              <div>
+                <div class="combo-num" id="combo-display">5</div>
+                <div class="combo-label">COMBO</div>
+              </div>
+              <div style="font-size:32px">🔥</div>
+            </div>
+          </div>
+          <div class="game-panel">
+            <p class="game-panel-title">連続学習ストリーク</p>
+            <div class="streak-display">
+              <div class="streak-icon">🔥</div>
+              <div class="streak-num">7</div>
+              <div>
+                <p style="font-size:14px;font-weight:700">7日連続学習！</p>
+                <p class="streak-text">「不屈の意志」バッジまであと 23日</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="game-panel">
+            <p class="game-panel-title">ステップ評価（スター）</p>
+            <div class="star-row">
+              <span class="star-title">条件付き確率の定義</span>
+              <div class="stars">
+                <span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span>
+              </div>
+            </div>
+            <div class="star-row">
+              <span class="star-title">P(A|B)の式の意味</span>
+              <div class="stars">
+                <span class="star filled">★</span><span class="star filled">★</span><span class="star empty">★</span>
+              </div>
+            </div>
+            <div class="star-row">
+              <span class="star-title">数値計算での適用</span>
+              <div class="stars">
+                <span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span>
+              </div>
+            </div>
+            <div class="star-row">
+              <span class="star-title">文章題→式への変換</span>
+              <div class="stars">
+                <span class="star filled">★</span><span class="star empty">★</span><span class="star empty">★</span>
+              </div>
+            </div>
+          </div>
+          <div class="game-panel">
+            <p class="game-panel-title">アチーブメント</p>
+            <div class="achievement-grid">
+              <div class="achievement-item">
+                <span class="achievement-icon">⚔️</span>
+                <span class="achievement-name">冒険の始まり</span>
+                <span class="achievement-badge">取得済</span>
+              </div>
+              <div class="achievement-item">
+                <span class="achievement-icon">🔥</span>
+                <span class="achievement-name">一週間の勇者</span>
+                <span class="achievement-badge">取得済</span>
+              </div>
+              <div class="achievement-item">
+                <span class="achievement-icon">💫</span>
+                <span class="achievement-name">10コンボ達成</span>
+                <span class="achievement-badge">取得済</span>
+              </div>
+              <div class="achievement-item" style="opacity:.5">
+                <span class="achievement-icon">👑</span>
+                <span class="achievement-name">確率の賢者</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 対応テーマ -->
+  <section id="themes" class="themes-section">
+    <div class="section-inner">
+      <p class="section-eyebrow">✦ Themes</p>
+      <h2 class="section-title">どんなテーマでも学べる</h2>
+      <p class="section-desc">学習テーマは自由入力。資格・受験・スキルアップ・趣味まで、あらゆる分野に対応します。</p>
+    </div>
+    <div class="themes-scroller fade-in-up">
+      <div class="themes-list">
+        <div class="theme-pill"><span class="theme-emoji">📐</span>中学受験 算数・確率</div>
+        <div class="theme-pill"><span class="theme-emoji">🚗</span>自動車免許 筆記試験</div>
+        <div class="theme-pill"><span class="theme-emoji">🌏</span>TOEIC 英語対策</div>
+        <div class="theme-pill"><span class="theme-emoji">🐍</span>Pythonプログラミング</div>
+        <div class="theme-pill"><span class="theme-emoji">⚖️</span>宅地建物取引士</div>
+        <div class="theme-pill"><span class="theme-emoji">💊</span>薬剤師国家試験</div>
+        <div class="theme-pill"><span class="theme-emoji">📈</span>ファイナンシャルプランナー</div>
+        <div class="theme-pill"><span class="theme-emoji">🍣</span>調理師免許</div>
+        <div class="theme-pill"><span class="theme-emoji">🎸</span>音楽理論</div>
+        <div class="theme-pill"><span class="theme-emoji">🏥</span>医療系国家試験</div>
+        <div class="theme-pill"><span class="theme-emoji">🧪</span>大学受験 化学</div>
+        <div class="theme-pill"><span class="theme-emoji">🤖</span>機械学習の基礎</div>
+        <div class="theme-pill"><span class="theme-emoji">📊</span>統計学・データ分析</div>
+        <div class="theme-pill"><span class="theme-emoji">🏛️</span>歴史・社会</div>
+        <div class="theme-pill"><span class="theme-emoji">✏️</span>なんでも入力できます</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- テスティモニアル -->
+  <section class="testimonials">
+    <div class="section-inner">
+      <p class="section-eyebrow">✦ Voices</p>
+      <h2 class="section-title">学習者の声</h2>
+      <div class="testimonials-grid fade-in-up">
+        <div class="testimonial-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <p class="testimonial-body">「質問をタップするだけで先生がすぐ答えてくれる。本当に塾に通っているみたい。コンボが途切れたくなくて、毎日続けられています。」</p>
+          <div class="testimonial-user">
+            <div class="testimonial-avatar">👦</div>
+            <div>
+              <p class="testimonial-name">K.T さん</p>
+              <p class="testimonial-meta">中学受験準備中（小5）</p>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <p class="testimonial-body">「仕事しながら宅建の勉強。通勤時間に1セッションずつ進めて、気づいたらレベル8まで上がっていました。ゲーム感覚で続けられるのが最高。」</p>
+          <div class="testimonial-user">
+            <div class="testimonial-avatar">👩</div>
+            <div>
+              <p class="testimonial-name">M.S さん</p>
+              <p class="testimonial-meta">宅建取得を目指す社会人</p>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <p class="testimonial-body">「解説が短くて分かりやすい。一度に大量の情報を詰め込まれないから、頭に入る。不正解でも責められないので、安心して挑戦できます。」</p>
+          <div class="testimonial-user">
+            <div class="testimonial-avatar">👨</div>
+            <div>
+              <p class="testimonial-name">R.N さん</p>
+              <p class="testimonial-meta">TOEIC 800点挑戦中</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta" class="cta-section">
+    <div class="section-inner">
+      <h2 class="cta-title">あなたの冒険を、<br><span>今日から始めよう。</span></h2>
+      <p class="cta-desc">学習テーマを入力するだけ。AIがすべての準備を整えます。まずは無料で体験してください。</p>
+      <div class="cta-actions">
+        <a href="#" class="btn-gold" style="font-size:18px;padding:18px 48px">⚔️ 無料で冒険を始める</a>
+        <a href="https://github.com/any-learn-ai/any-learn-ai-docs" target="_blank" class="btn-ghost">📄 設計ドキュメントを見る</a>
+      </div>
+      <p class="cta-note">クレジットカード不要 · いつでもキャンセル可能 · 対応テーマ無制限</p>
+    </div>
+  </section>
+
+  <!-- フッター -->
+  <footer>
+    <p class="footer-logo">⚡ ANY LEARN AI</p>
+    <nav class="footer-links">
+      <a href="https://github.com/any-learn-ai/any-learn-ai-docs">設計ドキュメント</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">利用規約</a>
+      <a href="#">お問い合わせ</a>
+      <a href="https://github.com/any-learn-ai">GitHub</a>
+    </nav>
+    <p class="footer-copy">© 2026 Any Learn AI. All rights reserved.</p>
+  </footer>
+
+</div><!-- /content-wrap -->
+
+<script>
+/* ===== 流れ星（Canvas） ===================================== */
+(function(){
+  const canvas = document.getElementById('stars')
+  const ctx = canvas.getContext('2d')
+  let stars = [], W, H
+
+  function resize(){
+    W = canvas.width  = window.innerWidth
+    H = canvas.height = window.innerHeight
+  }
+  function initStars(){
+    stars = Array.from({length: 120}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.4 + 0.3,
+      a: Math.random(),
+      speed: Math.random() * 0.4 + 0.1,
+      twinkleSpeed: Math.random() * 0.02 + 0.005,
+      twinkleOffset: Math.random() * Math.PI * 2,
+    }))
+  }
+
+  let meteors = []
+  function spawnMeteor(){
+    if(Math.random() > 0.015) return
+    meteors.push({
+      x: Math.random() * W * 0.7,
+      y: Math.random() * H * 0.3,
+      len: Math.random() * 120 + 60,
+      speed: Math.random() * 8 + 6,
+      alpha: 1,
+    })
+  }
+
+  let t = 0
+  function draw(){
+    ctx.clearRect(0, 0, W, H)
+    t += 0.016
+
+    // 星
+    stars.forEach(s => {
+      const a = s.a * (0.5 + 0.5 * Math.sin(t * s.twinkleSpeed * 60 + s.twinkleOffset))
+      ctx.beginPath()
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
+      ctx.fillStyle = `rgba(200, 180, 255, ${a})`
+      ctx.fill()
+      s.y += s.speed * 0.1
+      if(s.y > H) s.y = 0
+    })
+
+    // 流れ星
+    spawnMeteor()
+    meteors = meteors.filter(m => m.alpha > 0)
+    meteors.forEach(m => {
+      ctx.save()
+      ctx.globalAlpha = m.alpha
+      const grad = ctx.createLinearGradient(m.x, m.y, m.x + m.len, m.y + m.len * 0.4)
+      grad.addColorStop(0, 'rgba(252, 211, 77, 0)')
+      grad.addColorStop(0.3, 'rgba(252, 211, 77, 0.8)')
+      grad.addColorStop(1, 'rgba(196, 181, 253, 0)')
+      ctx.strokeStyle = grad
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(m.x, m.y)
+      ctx.lineTo(m.x + m.len, m.y + m.len * 0.4)
+      ctx.stroke()
+      ctx.restore()
+      m.x += m.speed; m.y += m.speed * 0.4; m.alpha -= 0.025
+    })
+
+    requestAnimationFrame(draw)
+  }
+
+  resize(); initStars(); draw()
+  window.addEventListener('resize', () => { resize(); initStars() })
+})()
+
+/* ===== スクロールアニメーション ============================= */
+;(function(){
+  const els = document.querySelectorAll('.fade-in-up')
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        e.target.classList.add('visible')
+        // stagger children
+        e.target.querySelectorAll('.feature-card,.cycle-card,.step-item,.testimonial-card,.game-panel').forEach((c,i) => {
+          c.style.transitionDelay = (i * 80) + 'ms'
+          c.style.opacity = '0'
+          c.style.transform = 'translateY(24px)'
+          c.style.transition = `opacity .6s ${i*80}ms cubic-bezier(0.19,1,0.22,1), transform .6s ${i*80}ms cubic-bezier(0.19,1,0.22,1)`
+          requestAnimationFrame(() => { c.style.opacity = '1'; c.style.transform = 'none' })
+        })
+      }
+    })
+  }, { threshold: 0.1 })
+  els.forEach(el => io.observe(el))
+})()
+
+/* ===== コンボカウンターアニメーション ====================== */
+;(function(){
+  const el = document.getElementById('combo-display')
+  if(!el) return
+  let n = 5
+  setInterval(() => {
+    n = n >= 10 ? 3 : n + 1
+    el.textContent = n
+    el.style.transform = 'scale(1.3)'
+    el.style.transition = 'transform 0ms'
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform 300ms cubic-bezier(0.34,1.56,0.64,1)'
+      el.style.transform = 'scale(1)'
+    })
+  }, 2000)
+})()
+
+/* ===== テーマピル 自動スクロール ========================= */
+;(function(){
+  const scroller = document.querySelector('.themes-scroller')
+  const list     = document.querySelector('.themes-list')
+  if(!scroller || !list) return
+  // リストを複製してループ感を出す
+  list.innerHTML += list.innerHTML
+  let pos = 0
+  function scrollLoop(){
+    pos += 0.5
+    if(pos >= list.scrollWidth / 2) pos = 0
+    scroller.scrollLeft = pos
+    requestAnimationFrame(scrollLoop)
+  }
+  // マウスオーバーで止める
+  scroller.addEventListener('mouseenter', () => { paused = true })
+  scroller.addEventListener('mouseleave', () => { paused = false })
+  let paused = false
+  function loop(){
+    if(!paused) { pos += 0.5; if(pos >= list.scrollWidth/2) pos=0; scroller.scrollLeft = pos }
+    requestAnimationFrame(loop)
+  }
+  loop()
+})()
+</script>
+</body>
+</html>
