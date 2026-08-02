@@ -63,14 +63,14 @@ AIが目標設定・期間・レベルをチャットで合意
 - Lottie Web（アバターアニメーション）
 - Howler.js（サウンド）
 - GSAP（演出シーケンス）
+- react-markdown + KaTeX（AI が書いた文章の Markdown・数式表示）
 
 ### バックエンド（AWS）
 - API Gateway + AWS Lambda (Node.js 22)
 - Amazon DynamoDB
 - Amazon S3 / CloudFront
 - Amazon Cognito（認証）
-- Amazon Polly（テキスト読み上げ）
-- Amazon Transcribe（音声認識）
+- Amazon Transcribe（音声認識・音声入力用）
 
 ### AI
 - **Anthropic Claude API**（直接利用・AWS Bedrock不使用）
@@ -99,10 +99,22 @@ AIが目標設定・期間・レベルをチャットで合意
 
 ---
 
+## 変更履歴
+
+設計書はバージョンごとにファイルを分けていますが、既存ファイルへの修正は
+その場で行っています（差分は git 履歴を参照）。区切りになる変更だけをここに残します。
+
+| 日付 | 変更 | 影響したファイル |
+|------|------|-----------------|
+| 2026-08-02 | **音声読み上げ（Amazon Polly / TTS）を機能ごと削除。** 画面が Markdown と数式（KaTeX）を描くようにしたため、「読み上げ用に記号を落とした文」と「画面用に記号を残した文」を生成物ごとに二重に持つ必要が生じた。数式は読み上げても伝わらず、二重管理に見合わないと判断した。音声**入力**（Transcribe）は残す | v1.0（2.4・5.5・7・9・10）、v1.1、v1.2、v1.3、デプロイ構成、index.html |
+| 2026-08-02 | `any-learn-ai-learning` を `any-learn-ai-goals` と統合し、新リポジトリ `any-learn-ai-core` へ移した | デプロイ構成 |
+
+---
+
 ## ドキュメントの文字コード
 
 すべてのMarkdownファイルは **UTF-8 with BOM** で保存されています。
 
 ---
 
-*最終更新: 2026-07-26*
+*最終更新: 2026-08-02*
