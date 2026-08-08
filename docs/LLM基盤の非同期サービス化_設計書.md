@@ -596,9 +596,9 @@ await requestGeneration({ purpose, system, userPrompt, schema, context, replyTo 
 検討メモの「5. 推奨する進め方」を、0章の訂正に合わせて組み替えたもの。
 **順序の基準は金額と危険度**にした。
 
-### 段階0: 独立した片付け（半日）
+### 段階0: 独立した片付け（**2026-08-08 実施済み**）
 
-どの設計を選んでも無駄にならない。
+どの設計を選んでも無駄にならない。**以下はすべて完了している**（結果は 9.1 節）。
 
 1. **`usesLlm` の既定値を `false` にする**（`core-stack.ts:247`）。
    影響は5関数（`start-session` / `get-session` / `list-micro-steps` / `next-micro-step` / `complete-micro-step`）。
@@ -618,6 +618,68 @@ await requestGeneration({ purpose, system, userPrompt, schema, context, replyTo 
 待ち時間が支配的でも、初期化と JSON 解析は CPU を使う。
 `generate-program` を 3008 → 1024 → 512 と落として `Init Duration` と `Duration` を比較し、
 劣化が無いことを確認してから他へ広げること。実使用 143MB に対し 512MB は3.5倍の余裕がある。
+
+#### 9.1 段階0 の結果（2026-08-08）
+
+**(1) 短いプログラムが作れなかった不具合 — 直った**
+
+`structureFor(totalSessions, totalWeeks)` を新設し、プロンプトと検査の**両方**が
+これを使うようにした（片方だけ直すと必ずまたずれる）。
+システムプロンプトからは固定値を外し、範囲はユーザープロンプトで毎回渡す。
+
+同じ道具で測り直した結果（セッション4回・2週の題材、3回とも独立生成）:
+
+| | 修正前 | 修正後 |
+|---|---|---|
+| 学習者に渡せたか | **0/3** | **3/3** |
+| セッション数 | 5, 4, 4 | **4, 4, 4** |
+| 致命的な不備 | 毎回2件（`sessions` が空） | **0件** |
+
+フェーズ数の上限を週数でも縛るようにしたので、
+「`durationWeeks` が無い」も併せて消えた。
+
+**(2) 再生成ループ — 外した**
+
+`generate-program` の2回目の生成と、`shouldRegenerate` / `ProgramDefect.worthRetry`
+を削除した。LLM 呼び出しは**常に1回**になる（従来は最悪4回）。
+
+**(3) `usesLlm` の既定値 — `false` にした**
+
+合成後のテンプレートで、鍵を持つのは**LLM を呼ぶ10関数のみ**になった。
+外れたのは `start-session` / `get-session` / `list-micro-steps` /
+`next-micro-step` / `complete-micro-step` の5つ。
+
+既定を反転させたことで「足し忘れると LLM を呼ぶ関数が実行時に落ちる」という
+逆向きの間違いが起こりうるので、鍵が**要る**側の検知テストも対に入れた。
+
+**(4) メモリ — 実測して 512MB へ**
+
+`generate-program` で 3008 / 1024 / 512 を測った（`tools/memory-probe.sh`）。
+
+| 割当 | 初期化 | 所要（コールド／ウォーム） | 実使用 |
+|---|---|---|---|
+| 3008MB | 283ms | 26.0秒 / 21.6秒 | 147MB |
+| 1024MB | 308ms | 29.4秒 / 17.5秒 | 144MB |
+| **512MB** | **391ms** | 20.7秒 / 25.2秒 | 145MB |
+
+- 実使用は割り当てに関係なく 145MB 前後。**512MB でも 3.5 倍の余裕**
+- 所要時間は割り当てと相関しない（LLM の待ちが支配的なので当然）
+- 差が出たのは初期化だけで **+108ms**。20〜30秒の処理に対して 0.4%
+
+**非同期ワーカー5つ**（`generate-program` / `explanation-worker` / `analyze-goal` /
+`estimate-sessions` / `calculate-plan`）を 512MB にした。
+
+⚠️ **対話系（1024MB の4つ）はまだ下げていない。**
+応答が 3〜7 秒なので、同じ +108ms でも占める割合が一桁大きい。
+下げるならそちらで測ること。0章の試算（B: 241円）は全関数 512MB の前提なので、
+現時点の実際の削減はそれより小さい。
+
+**(5) `MODEL_*` — 8件に揃えた**
+
+ワークフローが `PURPOSES` を網羅していることをテストで縛った
+（CDK 側は導出済みだが、ワークフローだけ手書きが残っていた）。
+
+**テスト**: 385 → 394 件。すべて通過。
 
 ### 段階1: 共有ライブラリ化（最も金額が大きい）
 
@@ -665,7 +727,7 @@ await requestGeneration({ purpose, system, userPrompt, schema, context, replyTo 
 
 | # | 事項 | 決めるのに必要なもの |
 |---|---|---|
-| 1 | メモリ 512MB で CPU が足りるか | 段階0 の実測（`generate-program` で1関数） |
+| 1 | ~~メモリ 512MB で CPU が足りるか~~ → **決着（9.1(4)）。ワーカーは 512MB へ。対話系4つは未計測** | 対話系での実測（3〜7秒の応答に +108ms が乗る影響） |
 | 2 | SSM によるモデル選択に移すか（環境変数のまま据え置くか） | 未コミット実装の SSM 版を動かして、反映の遅延（キャッシュ）を確認 |
 | 3 | 消費側の同時実行数をいくつにするか | プロバイダのレート制限の実値。現在どこにも記録がない |
 | 4 | `any-learn-ai-llm` を npm パッケージで配るか、リポジトリを束ねるか | GitHub Packages の認証をデプロイ経路に通せるか |
@@ -678,7 +740,9 @@ await requestGeneration({ purpose, system, userPrompt, schema, context, replyTo 
 | 何 | どこ |
 |---|---|
 | 費用モデル（A / B / C の3構成） | `any-learn-ai-core/tools/cost-model.ts` |
-| 論点1の実験 | `any-learn-ai-core/tools/inspect-loop-probe.ts` |
-| 実験の生データ | `any-learn-ai-core/tools/inspect-loop-probe.json` |
+| 論点1の実験 | `any-learn-ai-core/tools/inspect-loop-probe.ts`（`PROBE_ONLY` で題材を絞れる） |
+| 実験の生データ（修正前・18件） | `any-learn-ai-core/tools/inspect-loop-probe.json` |
+| 修正後の測り直し（3件） | `any-learn-ai-core/tools/inspect-loop-probe-after-fix.json` |
+| メモリの実測 | `any-learn-ai-core/tools/memory-probe.sh` |
 | メモリ実使用 | CloudWatch Logs Insights / 全 LLM Lambda の `REPORT` を `@maxMemoryUsed` で集計 |
 | AI 原価の実トークン数 | DynamoDB `any-learn-ai-ai-usage-dev` |
