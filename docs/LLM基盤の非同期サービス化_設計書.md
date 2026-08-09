@@ -1705,9 +1705,9 @@ qwen3.7-plus では解説1回が 0.19 円なのに **3.60 円**と表示され�
 
 | リポジトリ | 件数 |
 |---|---|
-| any-learn-ai-core | 402 |
+| any-learn-ai-core | 404 |
 | any-learn-ai-frontend | 153 |
-| any-learn-ai-llm | 72 |
+| any-learn-ai-llm | 75 |
 | any-learn-ai-assessments | 71 |
 | any-learn-ai-shared-infra | 37 |
 
@@ -1723,6 +1723,7 @@ qwen3.7-plus では解説1回が 0.19 円なのに **3.60 円**と表示され�
 | 失敗の可視化 | `gradingStatus: failed` が画面まで届く | 段階4a |
 | ポーリング1回 | 13〜45ms（初回 325ms はコールドスタート） | 段階4b |
 | チケットの使い捨て | 1回目 Allow / 2回目 Deny | 段階4b |
+| 単価が記録に載る | `rateInputUsd: 0.2 / rateOutputUsd: 1.2` | 決着 #8 |
 
 ### 11.3 実環境で確かめられなかったもの
 
