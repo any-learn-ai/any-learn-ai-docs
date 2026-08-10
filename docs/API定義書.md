@@ -9,12 +9,12 @@
 [基本設計書](基本設計書.md) / [詳細設計書](詳細設計書.md) と対になる。
 本書はエンドポイントごとの入出力だけを扱う。
 
-### 実装されているエンドポイント（全38 + WebSocket）
+### 実装されているエンドポイント（全39 + WebSocket）
 
 | サービス | 本数 |
 |---|---|
 | shared-infra | 3（`/account/providers/google`, `/dummy`, `/ws-ticket`）+ WebSocket 2ルート |
-| core | 27 |
+| core | 28 |
 | assessments | 6 |
 | media | 2 |
 
@@ -54,6 +54,7 @@ WebSocket は別方式（6章）。
 | 未認証 | 401 | `{ error: 'unauthorized', message }` |
 | 権限なし | 403 | `{ error: 'forbidden', message }`（media のみ） |
 | 見つからない | 404 | `{ error: 'not_found', message }` |
+| **プランの上限** | **402** | `{ error: 'plan_limit_reached', reason, message, plan? }` |
 | 競合 | 409 | `{ message }`（Google 連携解除のみ） |
 | サーバー障害 | 500 | `{ error: 'internal_error', message }` |
 
@@ -152,6 +153,7 @@ status が 'ready' / 'failed' になったら終了
 | POST | `/programs` | 202 |
 | GET | `/programs/{programId}` | 200 |
 | DELETE | `/programs/{programId}` | 204 |
+| PUT | `/programs/{programId}/activate` | 200 |
 | GET | `/programs/{programId}/cost` | 200 |
 | GET | `/progress/{programId}` | 200 |
 
@@ -365,12 +367,31 @@ status が 'ready' / 'failed' になったら終了
 未知のモデルは 0 円にせず**最も高い既知の単価**で見積もる。
 安く見えて値付けを誤るより、高く見えるほうがよい。
 
-### 5.10 GET /progress/{programId}
+### 5.10 PUT /programs/{programId}/activate
+
+凍結されたコースを「学習中」に戻す。
+
+```
+// 200
+{ programId, frozen: false }
+
+// 402 plan_limit_reached / reason: concurrent_programs
+```
+
+降格して未完走のコースがプランの上限を超えると、コースは**凍結**される。
+読むことはできるが、LLM を呼ぶ操作（解説・再解説・Q&A・確認問題・採点）が
+止まる。この API で「進める側」に切り替える。
+
+⚠️ **上限に空きがあるときだけ通る。**空きが無ければ 402 を返す。
+切り替えを自由にすると、上位プランで作ったコースを下位プランで
+並行して進められてしまう（設計書 9.7）。
+
+### 5.11 GET /progress/{programId}
 
 ```
 // 200
 {
-  programId, programTitle, totalWeeks, programStatus,
+  programId, programTitle, totalWeeks, isCompleted,
   generationStatus, generationError,
   completedSessionIds, currentPhaseId, currentUnitId, currentSessionId,
   lastStudiedAt, totalStudyMinutes,
