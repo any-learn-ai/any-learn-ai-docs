@@ -154,7 +154,8 @@ status が 'ready' / 'failed' になったら終了
 | GET | `/programs/{programId}` | 200 |
 | DELETE | `/programs/{programId}` | 204 |
 | PUT | `/programs/{programId}/activate` | 200 |
-| GET | `/programs/{programId}/cost` | 200 |
+| PUT | `/programs/{programId}/settings` | 200 |
+| POST | `/programs/{programId}/customize` | 202 |
 | GET | `/progress/{programId}` | 200 |
 
 ### 3.4 core — セッション
@@ -349,23 +350,55 @@ status が 'ready' / 'failed' になったら終了
 }
 ```
 
-### 5.9 GET /programs/{programId}/cost
+### 5.9 PUT /programs/{programId}/settings
 
-```
+コースごとの設定。いまは確認問題の数だけ。
+
+```ts
+{ quizPerStep: number }   // 1 以上の整数
+
 // 200
-{
-  programId, calls, inputTokens, outputTokens, cacheWriteTokens, cacheReadTokens,
-  usd, jpy, estimatedRate,
-  byPurpose: CostBreakdownEntry[],
-  byModel:   CostBreakdownEntry[],
-  measuredFrom        // calls > 0 なら createdAt、0 なら null
-}
+{ programId, quizPerStep }
+
+// 402 plan_limit_reached / reason: quiz_per_step
 ```
 
-⚠️ **`estimatedRate: true` は「単価が確かでない」ことを示す。**
-呼び出しの記録に単価が入っていない古いぶんで、凍結した表から当てている。
-未知のモデルは 0 円にせず**最も高い既知の単価**で見積もる。
-安く見えて値付けを誤るより、高く見えるほうがよい。
+⚠️ **上限を超えたら切り詰めずに 402 を返す。**黙って 2 に丸めると、
+画面は 3 を選んだつもりのまま 2 で動く。⚠️ **断るほうが親切である。**
+
+⚠️ **すでに始まっているセッションには効かない。**何問出すかは
+セッションを始めた時点で焼き込む（`Session.quizPerStep`）。
+途中で増減させると、進行中の出題が食い違う。
+
+### 5.9.1 POST /programs/{programId}/customize
+
+出来上がった構成に要望を出して作り直す。⚠️ **Standard 以上・1回だけ。**
+
+```ts
+{ request: string }   // 必須・1000文字以内
+
+// 202
+{ programId, generationStatus: 'generating' }
+
+// 402 plan_limit_reached / reason: program_customization
+// 409 まだ生成中 / すでに調整済み / 学習を始めている / 計画が未確定
+```
+
+⚠️ **学習を1回でも始めていたら 409。**作り直すとセッション ID が
+振り直され（`p1-u1-s1` は位置からの採番）、**進捗の参照先が静かに
+ずれる。**制限ではなく、壊さないための条件である。
+
+⚠️ **1回きりは回数で持たない。**`Program.customizedAt` に時刻が
+入っているかどうかで判断する。
+
+⚠️ 作り直しは `putProgram` で**丸ごと上書き**する（部分更新にすると
+前の phases が残ったまま generating になり、画面が古い構成を
+「出来上がっている」と読む）。⚠️ **そのため、持ち越したい設定は
+明示的に渡す必要がある**（`quizPerStep`）。渡し忘れると黙って消える。
+
+⚠️ **ここにあった `GET /programs/{programId}/cost` は廃止した。**
+原価の月次上限をやめたときに、集計そのものを畳んでいる
+（`利用量と所有権整理` / 料金プラン設計書の改訂1）。
 
 ### 5.10 PUT /programs/{programId}/activate
 
@@ -417,6 +450,7 @@ status が 'ready' / 'failed' になったら終了
   programId: string;          // 必須
   unitId: string;             // 必須
   subject: string;            // 必須
+  quizPerStep?: number;       // 1ステップに出す確認問題の数（既定 1）
   programSessionId?: string;  // あると再開判定を行う
   title?: string;             // 未指定は subject
   topicTags?: string[];
@@ -440,6 +474,14 @@ status が 'ready' / 'failed' になったら終了
 
 ⚠️ **再開は `programSessionId` が一致し、かつステップの概念が同じときだけ。**
 プログラムを作り直すと概念が変わるので、その場合は新しいセッションになる。
+
+⚠️ **`quizPerStep` は画面から来るが、そのまま信じない。**プランの上限まで
+切り詰めてから焼き込む（`clampQuizPerStep`）。⚠️ **契約が読めないときは
+1 に倒す**（開くほうへ倒さない）。
+
+⚠️ この受付は programs テーブルを持っていないので、プログラムの設定を
+読み直さない。**嘘をつかれても、その人自身のプランの上限を超えられない**
+ので害が無い。⚠️ **セッションに焼き込むのは、途中で増減させないため。**
 
 ### 5.12 POST /micro-steps/{microStepId}/explanation
 
@@ -548,6 +590,9 @@ status が 'ready' / 'failed' になったら終了
   verdict, score, correctElements, incorrectElements,
   feedbackMessage, misunderstoodConcept,
   avatarState, masteryScore, isStepComplete, attemptCount,
+  explanation,          // ⚠️ 正解でも出す（なぜそうなるのか）
+  // このステップにまだ問題が残っているなら
+  nextAction: 'next_quiz',
   // 完了なら
   nextAction: 'complete',
   // 未完了なら
@@ -563,6 +608,16 @@ status が 'ready' / 'failed' になったら終了
 モデルには決めさせない。
 
 ⚠️ **確認問題が無いと 400。**
+
+⚠️ **`explanation` は正解のときにも入る。**確認問題を作らせるときに
+一緒に書かせてあり、**追加の LLM 呼び出しは起きない**（+0.02円/問）。
+不正解のときの解説は採点が書く。
+
+⚠️ **`nextAction: 'next_quiz'` は「通ったが、まだこのステップに
+問題が残っている」。**何問出すかはセッションに焼き込んである
+（`Session.quizPerStep` ← `Program.quizPerStep` ← プランの上限）。
+⚠️ 問題は配列で持たず、**通るたびに次を作る。**既存の
+「不正解なら作り直す」経路にそのまま乗る。
 
 ### 5.17 POST /micro-steps/{microStepId}/re-explain
 
