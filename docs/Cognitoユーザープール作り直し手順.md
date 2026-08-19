@@ -128,23 +128,30 @@ prod は0件。⚠️ **prod に購読が出てからでは、Stripe 側の meta
 
 ## 3. 事前準備
 
-### 3.1 ⚠️ ドメイン接頭辞の衝突（stg / prod のみ）
+### 3.1 ⚠️ ドメイン接頭辞の衝突（**全環境**）
+
+⚠️ **当初「stg / prod のみ」と書いていた。間違いだった。**
+
+CloudFormation は**新しい論理 ID を作ってから、古いほうを消す。**
+V3 のドメインを作る時点で V2 のドメインがまだ生きているので、
+⚠️ **dev でも衝突する**（`RemovalPolicy.DESTROY` かどうかは関係ない）。
+
+⚠️ **どの環境でも、デプロイの前に旧ドメインを消すこと。**
 
 ホスト UI の接頭辞は `any-learn-ai-{env}` で固定（`config.ts`）。
 ⚠️ **AWS 全体で一意**である必要がある。
 
 そして削除方針は:
 
-| 環境 | `isProduction` | `removalPolicy` |
-|---|---|---|
-| dev | false | `DESTROY` |
-| **stg** | **true** | ⚠️ **`RETAIN`** |
-| **prod** | **true** | ⚠️ **`RETAIN`** |
+| 環境 | `isProduction` | `removalPolicy` | ドメイン衝突 |
+|---|---|---|---|
+| dev | false | `DESTROY` | ⚠️ **する**（作成が削除より先） |
+| **stg** | **true** | ⚠️ **`RETAIN`** | ⚠️ **する**（旧プールごと残る） |
+| **prod** | **true** | ⚠️ **`RETAIN`** | ⚠️ **する**（同上） |
 
-⚠️ **stg も RETAIN である。**旧プールが残ったまま同じ接頭辞で新しい
-ドメインを作ろうとして、⚠️ **デプロイが失敗する。**
+⚠️ **stg も RETAIN である。**そして dev も、削除方針に関わらず衝突する。
 
-**対処: stg / prod では、新スタックを流す前に旧プールのドメインを消す。**
+**対処: 新スタックを流す前に、旧プールのドメインを消す。**
 
 ```bash
 aws cognito-idp delete-user-pool-domain \
