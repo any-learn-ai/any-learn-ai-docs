@@ -790,6 +790,32 @@ recommendedNextSteps[], generatedAt }`
 ⚠️ **Google 単独で作られたアカウント（username が `google_` で始まる）は
 解除させない。**解除するとログイン手段が無くなる。
 
+### 5.27 パスワードの再設定（Cognito が直接受ける）
+
+⚠️ **この API は無い。**画面が Cognito を直接叩く（Amplify 経由）。
+サーバーを1枚挟む理由が無く、挟むとパスワードが自前の Lambda を通る。
+
+```
+① resetPassword({ username })          … 確認コードを送る
+② confirmResetPassword({ username, confirmationCode, newPassword })
+```
+
+⚠️ **①の成否を画面へ伝えない。**ユーザープールは
+`preventUserExistenceErrors: true` で動いており、Cognito 自身が
+「居る／居ない」を隠す。⚠️ ここでエラーを出すと**その配慮が無意味になる**
+（総当たりで、どのアドレスが利用者かを調べられる）。
+
+⚠️ Google だけで作ったアカウントにはパスワードが無く、Cognito は別の
+エラーを返す。**これも同じ扱いにする。**区別すると「このアドレスは
+Google で登録されている」と分かってしまう。
+
+⚠️ ②は隠さない。コード違い・期限切れ・規則違反は本人が直せることで、
+黙ると直しようがない。ここまで来た人は、そのメールを受け取った人である。
+
+⚠️ **メールの文面は CustomMessage トリガーが用件ごとに書き分ける。**
+Cognito はユーザープールに文面を1つしか持てないため、これが無いと
+再設定を頼んだ人にも登録向けの文面が届く（`src/custom-message.ts`）。
+
 ---
 
 ## 6. WebSocket
