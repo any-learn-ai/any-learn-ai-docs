@@ -144,7 +144,7 @@ status が 'ready' / 'failed' になったら終了
 | DELETE | `/goals/{goalId}` | 204 |
 | POST | `/goals/{goalId}/chat` | 202 |
 | POST | `/goals/{goalId}/plan` | 202 |
-| POST | `/goals/{goalId}/plan/estimate` | 202 |
+| POST | `/goals/{goalId}/skip-assessment` | 202 |
 
 ### 3.3 core — プログラム・進捗
 
@@ -292,36 +292,58 @@ status が 'ready' / 'failed' になったら終了
 
 ```ts
 {
-  assessmentId: string;          // 必須
-  depth: 'light'|'standard'|'deep';  // 必須
-  durationWeeks: number;         // 必須・整数 1〜104
-  studyDays: number[];           // 必須・0(日)〜6(土)、重複除去後1件以上
-  // 診断コンテキスト（任意・プログラム生成の入力になる）
-  diagnosticSummary?: string;    // 先頭 4000 文字
-  totalScore?: number;
-  weakTopics?: string[];         // 先頭 20 件
-  strongTopics?: string[];       // 同上
-  estimatedLevel?: string;
+  sessionsPerDay: number;   // 必須・1 以上の整数
+  studyDays: number[];      // 必須・0(日)〜6(土)、重複除去後1件以上
+  assessmentId?: string;    // ⚠️ 任意（下記）
 }
 
 // 202
 { goalId, planStatus: 'calculating' }
 ```
 
+⚠️ **`assessmentId` は省略できる（2026-08-27）。**
+⚠️ **理解度チェックをスキップした人は持っていない。**必須へ戻すと、
+⚠️ **スキップした人だけが確定できなくなる。**しかも症状が出るのは
+その人だけで、こちらが気づく機会が無い。
+
+⚠️ **診断結果（`diagnosticSummary` / `weakTopics` など）は送らなくてよい。**
+⚠️ **サーバーが目標から取る**（2026-08-26 に持ち回りをやめた）。
+受け口は互換のため残っているが、⚠️ **画面から渡す形へ戻さないこと。**
+
+⚠️ **`depth`（学習の深さ）は受け取らない。**廃止済み。
+⚠️ **`durationWeeks`（学習期間）も受け取らない。**曜日と1日あたりの
+回数から導く。
+
 ⚠️ **すでに `calculating` なら、ワーカーを起動せず同じ形を返す。**
 
 ⚠️ `startDate` はサーバーが当日で決める。クライアントは指定できない。
 
-### 5.6 POST /goals/{goalId}/plan/estimate
+### 5.6 POST /goals/{goalId}/skip-assessment
 
-必要セッション数の**先読み**。診断レポートを読んでいる間に走らせる。
+⚠️ **理解度チェックを受けずに学習を始める。**
 
 ```
 // 202
-{ goalId, estimateStatus: 'estimating' }   // 既存なら 'estimating' | 'ready'
+{ goalId, skipped: true }
+{ goalId, alreadySkipped: true }      // すでにスキップ済み
+{ goalId, programId }                 // すでにプログラムがある
 ```
 
-⚠️ **保存するだけで、学習計画は確定しない。**確定は 5.5。
+⚠️ **返った時点でプログラムはまだ無い。**サーバーが
+計画（目次）→ プログラムの順に作る（AI 2回）。呼んだ側は
+`/goals/{goalId}/plan/` へ移り、⚠️ **そちらで出来上がりを待つ。**
+⚠️ **ここで待たせないこと**（数分かかる）。
+
+⚠️ **プロンプトは渡さない。**診断なし用の書き方を選ぶのはサーバーである
+（`PLAN_SYSTEM_WITHOUT_DIAGNOSIS`）。
+
+- 400 … `status === 'clarifying'`（まず目標を確定すること）
+- ⚠️ 二度押しは安全（印を先に付け、付けられたときだけ依頼を積む）
+
+⚠️ 目標に `assessmentSkippedAt` が入り、⚠️ **`GET /goals` にも載る。**
+⚠️ **これは「事故で診断が無い」と区別するための印**で、
+`preview-program` の守り（診断結果を持たずに生成しない）を、
+この目標だけ例外にする。⚠️ **守りごと消さないこと。**
 
 ### 5.7 POST /programs
 
